@@ -1,0 +1,24 @@
+# Exclude the large hackathon candidate datasets and zip files (bracket wildcard)
+*India_runs_data_and_ai_challenge*
+
+# Exclude final submission files (which are generated dynamically)
+*.csv
+!sample_submission.csv
+
+# Exclude local shell wrappers
+powershell.cmd
+
+# Python virtual environment and caching
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.env
+
+# Editor-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
