@@ -4,6 +4,10 @@ import gzip
 import csv
 import argparse
 from pathlib import Path
+import zipfile
+import xml.etree.ElementTree as ET
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 # Real-world founding years of key companies in the dataset
 FOUNDING_YEARS = {
@@ -56,13 +60,126 @@ CONSULTING_FIRMS = {
     "Tech Mahindra", "Mindtree", "Mphasis", "HCL"
 }
 
-# Fictional/product startup companies in the dataset
+# Fictional/product startup companies in the dataset (merged and expanded)
 PRODUCT_COMPANIES = {
     "Pied Piper", "Hooli", "Initech", "Dunder Mifflin", "Wayne Enterprises",
     "Stark Industries", "Globex Inc", "Acme Corp", "Razorpay", "Swiggy",
     "Zomato", "CRED", "Flipkart", "InMobi", "upGrad", "Unacademy",
-    "Vedantu", "PharmEasy", "Ola", "Nykaa", "Zoho", "Freshworks"
+    "Vedantu", "PharmEasy", "Ola", "Nykaa", "Zoho", "Freshworks",
+    "Zerodha", "Groww", "CoinDCX", "CoinSwitch", "upstox", "Khatabook", "OkCredit",
+    "Dunzo", "BigBasket", "Grofers", "Blinkit", "Urban Company", "Lenskart", "boAt",
+    "Mamaearth", "Licious", "CureFit", "Cult.fit", "PharmEasy", "1mg", "Practo",
+    "Byju's", "Physics Wallah", "Toppr", "Cuemath", "Whitehat Jr",
+    "InMobi", "MoEngage", "CleverTap", "Chargebee", "Postman", "BrowserStack",
+    "Druva", "Icertis", "Innovaccer", "Hasura", "Apna", "Khatabook",
+    "ShareChat", "Moj", "Josh", "Koo", "Meesho", "Snapdeal",
+    "Zepto", "Swiggy Instamart", "Country Delight", "Licious",
+    "Sarvam AI", "Krutrim", "Fractal Analytics", "Mu Sigma", "Tiger Analytics",
+    "Observe.AI", "Yellow.ai", "Haptik", "Verloop", "Gupshup",
+    "Google", "Microsoft", "Amazon", "Meta", "Apple", "Netflix", "Uber", "Airbnb",
+    "Salesforce", "Adobe", "Atlassian", "Stripe", "Spotify", "LinkedIn", "Twitter",
+    "ByteDance", "Walmart Labs", "Target India", "Goldman Sachs Engineering",
+    "Morgan Stanley Technology", "JPMorgan Chase Tech", "Visa", "Mastercard",
+    "PayPal", "Intuit", "ServiceNow", "Workday", "Splunk", "Snowflake", "Databricks",
+    "MongoDB", "Confluent", "HashiCorp", "GitLab", "GitHub", "Figma", "Notion",
+    "Canva", "Zoom", "Slack", "Dropbox"
 }
+
+# Tier-1 and Tier-2 Indian Engineering Colleges/Universities
+TIER_1_COLLEGES = {
+    "iit bombay", "iit delhi", "iit madras", "iit kanpur", "iit kharagpur",
+    "iit roorkee", "iit guwahati", "iit hyderabad", "iit bhubaneswar",
+    "iit indore", "iit mandi", "iit ropar", "iit gandhinagar", "iit jodhpur",
+    "iit patna", "iit varanasi", "iit bhu", "bits pilani", "bits goa",
+    "bits hyderabad", "iiit hyderabad", "iiit delhi", "iiit bangalore",
+    "nit trichy", "nit warangal", "nit surathkal", "nit calicut",
+    "isi kolkata", "iisc bangalore", "iim ahmedabad", "iim bangalore", "iim calcutta"
+}
+
+TIER_2_COLLEGES = {
+    "nit", "vit", "manipal", "thapar", "dtu", "nsit", "iiit", "pec",
+    "coep", "vjti", "spit", "kjsce", "pict", "mit pune", "mit manipal",
+    "bit mesra", "amrita", "srm", "vellore"
+}
+
+def parse_docx_to_text(docx_path):
+    """Extract text from a DOCX file using standard libraries (zipfile and xml) to avoid python-docx dependency."""
+    try:
+        with zipfile.ZipFile(docx_path) as z:
+            xml_content = z.read('word/document.xml')
+        root = ET.fromstring(xml_content)
+        paragraphs = []
+        for paragraph in root.iter('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p'):
+            texts = [node.text for node in paragraph.iter('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t') if node.text]
+            if texts:
+                paragraphs.append(''.join(texts))
+        return '\n'.join(paragraphs)
+    except:
+        return ""
+
+def find_and_load_job_description(candidates_path_str):
+    """Find job_description.docx and return its parsed text."""
+    candidates_path = Path(candidates_path_str)
+    potential_paths = [
+        candidates_path.parent / "job_description.docx",
+        Path(".") / "job_description.docx",
+        Path(".") / "[PUB] India_runs_data_and_ai_challenge" / "[PUB] India_runs_data_and_ai_challenge" / "India_runs_data_and_ai_challenge" / "job_description.docx",
+        Path(".") / "India_runs_data_and_ai_challenge" / "job_description.docx",
+    ]
+    for path in potential_paths:
+        if path.exists():
+            text = parse_docx_to_text(path)
+            if text.strip():
+                print(f"Loaded job description from: {path}")
+                return text
+    print("Warning: job_description.docx not found or empty.")
+    return ""
+
+def build_candidate_text(c):
+    """Build a single text blob from candidate profile fields for TF-IDF match."""
+    parts = []
+    profile = c.get("profile", {})
+    if profile.get("current_title"):
+        parts.append(profile.get("current_title"))
+    
+    for job in c.get("career_history", []):
+        if job.get("title"):
+            parts.append(job.get("title"))
+        if job.get("company"):
+            parts.append(job.get("company"))
+        for field in ("description", "responsibilities"):
+            val = job.get(field)
+            if isinstance(val, str) and val.strip():
+                parts.append(val)
+                
+    for skill in c.get("skills", []):
+        name = skill.get("name")
+        if name:
+            parts.append(name)
+            
+    for edu in c.get("education", []):
+        for field in ("degree", "field", "major", "specialization", "program"):
+            val = edu.get(field)
+            if isinstance(val, str) and val.strip():
+                parts.append(val)
+        if edu.get("institution"):
+            parts.append(edu.get("institution"))
+            
+    return " ".join(str(p) for p in parts if p)
+
+def compute_tfidf_scores(jd_text, all_candidate_texts):
+    """Compute cosine similarity scores between JD and candidate profiles using TF-IDF."""
+    if not jd_text or not all_candidate_texts:
+        return [0.0] * len(all_candidate_texts)
+    try:
+        documents = [jd_text] + [text or "" for text in all_candidate_texts]
+        vectorizer = TfidfVectorizer(stop_words="english", max_features=500)
+        tfidf_matrix = vectorizer.fit_transform(documents)
+        similarities = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
+        return similarities.tolist()
+    except Exception as e:
+        print(f"Error computing TF-IDF: {e}")
+        return [0.0] * len(all_candidate_texts)
 
 def is_honeypot_candidate(c):
     """Check if the candidate has a subtly impossible profile (honeypot)."""
@@ -148,6 +265,22 @@ def get_disqualification_reason(c):
         
     return None
 
+def score_education(c):
+    """Score education tier based on institution (Weight = 5%)."""
+    education = c.get('education', [])
+    if not education:
+        return 0.4  # Neutral-low
+    highest_score = 0.4
+    for edu in education:
+        college = edu.get('institution', '').lower()
+        if any(t1 in college for t1 in TIER_1_COLLEGES):
+            highest_score = max(highest_score, 1.0)
+        elif any(t2 in college for t2 in TIER_2_COLLEGES):
+            highest_score = max(highest_score, 0.7)
+        else:
+            highest_score = max(highest_score, 0.5)
+    return highest_score
+
 def calculate_candidate_score(c):
     """Compute the weighted hybrid fit score for the candidate."""
     cur_title = c['profile'].get('current_title', '').lower()
@@ -182,7 +315,7 @@ def calculate_candidate_score(c):
     else:
         exp_score = max(0.0, 1.0 - 0.1 * (years - 9.0))
         
-    # 3. Product Company Experience (Weight = 20%)
+    # 3. Product Company Experience (Weight = 15%)
     history = c.get('career_history', [])
     total_months = sum(job.get('duration_months', 0) for job in history)
     product_months = sum(job.get('duration_months', 0) for job in history if job.get('company') in PRODUCT_COMPANIES)
@@ -190,7 +323,7 @@ def calculate_candidate_score(c):
     has_startup = any(job.get('company') in ["CRED", "Swiggy", "Razorpay", "Pied Piper", "Krutrim", "Sarvam AI"] for job in history)
     product_score = min(1.0, product_ratio + (0.2 if has_startup else 0.0))
     
-    # 4. Skills Score (Weight = 25%)
+    # 4. Skills Score (Weight = 15%)
     skills_list = [s.get('name', '').lower() for s in c.get('skills', [])]
     
     # Must-have skills (0.25 each group)
@@ -213,7 +346,13 @@ def calculate_candidate_score(c):
     nice_have_count = sum(nice_to_haves)
     skill_score_final = min(1.0, skill_score + 0.05 * nice_have_count)
     
-    # 5. Location and Notice Period Score (Weight = 15%)
+    # 5. Education Score (Weight = 5%)
+    edu_score = c.get('_edu_score', 0.4)
+    
+    # 6. TF-IDF Cosine Similarity Score (Weight = 10%)
+    tfidf_score = c.get('_tfidf_score', 0.0)
+    
+    # 7. Location and Notice Period Score (Weight = 15%)
     loc = c['profile'].get('location', '').lower()
     country = c['profile'].get('country', '').lower()
     
@@ -244,12 +383,14 @@ def calculate_candidate_score(c):
     base_score = (
         0.25 * title_score +
         0.15 * exp_score +
-        0.20 * product_score +
-        0.25 * skill_score_final +
+        0.15 * product_score +
+        0.15 * skill_score_final +
+        0.05 * edu_score +
+        0.10 * tfidf_score +
         0.15 * loc_notice_score
     )
     
-    # 6. Behavioral Multiplier (0.5 to 1.4 multiplier)
+    # 8. Behavioral Multiplier (0.5 to 1.4 multiplier)
     mult = 1.0
     
     # Recruiter response rate
@@ -286,26 +427,58 @@ def calculate_candidate_score(c):
     gh_score = c['redrob_signals'].get('github_activity_score', -1)
     if gh_score >= 50:
         mult += 0.1
+
+    # Offer acceptance rate (-1 to 1.0, -1 means no prior offers = neutral)
+    offer_rate = c['redrob_signals'].get('offer_acceptance_rate', -1)
+    if offer_rate >= 0.7:
+        mult += 0.15
+    elif 0 <= offer_rate < 0.3:
+        mult -= 0.15
+
+    # Saved by recruiters - social proof signal
+    saved_count = c['redrob_signals'].get('saved_by_recruiters_30d', 0)
+    if saved_count >= 10:
+        mult += 0.1
+    elif saved_count >= 5:
+        mult += 0.05
+
+    # Profile completeness - filters out sloppy/incomplete profiles
+    completeness = c['redrob_signals'].get('profile_completeness_score', 50)
+    if completeness >= 90:
+        mult += 0.05
+    elif completeness < 50:
+        mult -= 0.1
+
+    # Verification signals - basic trust/fraud check
+    verified_count = sum([
+        c['redrob_signals'].get('verified_email', False),
+        c['redrob_signals'].get('verified_phone', False),
+        c['redrob_signals'].get('linkedin_connected', False)
+    ])
+    if verified_count == 3:
+        mult += 0.05
+    elif verified_count == 0:
+        mult -= 0.1
         
     # Bound multiplier and apply
     final_mult = max(0.5, min(1.4, mult))
     return base_score * final_mult
 
 def generate_candidate_reasoning(c, rank):
-    """Generate high-quality, non-templated reasoning referencing specific candidate facts."""
+    """Generate concise, factual, non-templated reasoning based on actual candidate qualifications."""
     profile = c['profile']
-    title = profile.get('current_title')
-    company = profile.get('current_company')
-    years = profile.get('years_of_experience')
-    loc = profile.get('location')
-    notice = c['redrob_signals'].get('notice_period_days')
+    title = profile.get('current_title', '').strip()
+    company = profile.get('current_company', '').strip()
+    years = profile.get('years_of_experience', 0)
+    loc = profile.get('location', '').strip()
+    notice = c['redrob_signals'].get('notice_period_days', 90)
     
     # Extract matching skills
     skills_list = [s.get('name') for s in c.get('skills', [])]
     skills_lower = [s.lower() for s in skills_list]
     
     vectordbs = ["pinecone", "weaviate", "qdrant", "milvus", "opensearch", "elasticsearch", "faiss", "chroma"]
-    retrievals = ["retrieval", "embeddings", "embedding", "search", "semantic search"]
+    retrievals = ["retrieval", "embeddings", "embedding", "search", "semantic search", "rag", "ranking", "nlp", "llm", "fine-tuning", "lora", "peft"]
     evals = ["ndcg", "mrr", "map", "evaluation"]
     nice_to_haves = ["fine-tuning", "lora", "peft", "xgboost", "learning-to-rank", "distributed systems", "inference optimization"]
     
@@ -314,7 +487,8 @@ def generate_candidate_reasoning(c, rank):
     matched_eval = [s for s in skills_list if any(w in s.lower() for w in evals)]
     matched_nice = [s for s in skills_list if any(w in s.lower() for w in nice_to_haves)]
     
-    sent1 = f"Strong fit as a {title} from {company} with {years:.1f} years of experience."
+    company_text = f" at {company}" if company else ""
+    sent1 = f"Strong fit as a {title}{company_text} with {years:.1f} years of experience."
     
     skill_mentions = []
     if matched_ret:
@@ -330,11 +504,27 @@ def generate_candidate_reasoning(c, rank):
     else:
         skill_phrase = "Strong machine learning engineering background"
         
-    if matched_nice:
+    if matched_nice and matched_nice[0] not in skill_phrase:
         skill_phrase += f" and {matched_nice[0]}"
-        
     sent2 = f"{skill_phrase}."
     
+    # Education
+    edu_score_val = c.get('_edu_score', 0.4)
+    edu_phrase = ""
+    if edu_score_val >= 1.0:
+        edu_phrase = " Candidate has a strong educational background from a Tier-1 institution."
+        
+    # Platform Behavior
+    signal_phrase = ""
+    offer_rate = c['redrob_signals'].get('offer_acceptance_rate', -1)
+    if offer_rate >= 0.7:
+        signal_phrase = f" Shows high offer acceptance rate ({int(offer_rate * 100)}%)."
+    else:
+        resp_rate = c['redrob_signals'].get('recruiter_response_rate', 0.0)
+        if resp_rate >= 0.7:
+            signal_phrase = f" Exceptionally responsive to recruiter messages ({int(resp_rate * 100)}% rate)."
+            
+    # Location and Notice
     loc_phrase = ""
     if "noida" in loc.lower() or "pune" in loc.lower():
         loc_phrase = f"Ideally located in {loc}"
@@ -347,6 +537,7 @@ def generate_candidate_reasoning(c, rank):
     else:
         notice_phrase = f"with a {notice}-day notice period"
         
+    # Concerns
     concerns = []
     if notice > 60:
         concerns.append(f"{notice}d notice")
@@ -354,7 +545,8 @@ def generate_candidate_reasoning(c, rank):
         concerns.append(f"{years:.1f}y experience (a bit junior)")
     if years > 9.0:
         concerns.append(f"{years:.1f}y experience (more senior)")
-    if "noida" not in loc.lower() and "pune" not in loc.lower() and not c['redrob_signals'].get('willing_to_relocate'):
+    country = profile.get('country', '').lower()
+    if country != "india" and not c['redrob_signals'].get('willing_to_relocate'):
         concerns.append("needs relocation support")
         
     concern_phrase = ""
@@ -362,9 +554,9 @@ def generate_candidate_reasoning(c, rank):
         concern_phrase = f" Note: {', '.join(concerns)}."
         
     if rank <= 10:
-        reasoning = f"{sent1} {sent2} Perfectly fits the Pune/Noida hybrid setup {notice_phrase}.{concern_phrase}"
+        reasoning = f"{sent1} {sent2}{edu_phrase}{signal_phrase} Perfectly fits the hybrid setup {notice_phrase}.{concern_phrase}"
     elif rank <= 50:
-        reasoning = f"{sent1} {sent2} Good location fit ({loc}) {notice_phrase}.{concern_phrase}"
+        reasoning = f"{sent1} {sent2}{edu_phrase} Good location fit ({loc}) {notice_phrase}.{concern_phrase}"
     else:
         reasoning = f"Good technical match with {years:.1f} years experience, skilled in {skill_mentions[0] if skill_mentions else 'ML'}.{concern_phrase}"
         
@@ -393,6 +585,10 @@ def main():
     honeypot_count = 0
     disqualified_count = 0
     total_processed = 0
+    qualified_candidates = []
+    
+    # Load JD text dynamically (zero-dependency XML parser)
+    jd_text = find_and_load_job_description(args.candidates)
     
     with open_func(candidates_path) as f:
         for line in f:
@@ -412,13 +608,25 @@ def main():
                 disqualified_count += 1
                 continue
                 
-            # Step 3: Score candidates
-            score = round(calculate_candidate_score(c), 4)
-            scored_candidates.append((c, score))
+            # Keep qualified candidates for TF-IDF / batch scoring
+            qualified_candidates.append(c)
             
     print(f"Processed {total_processed} total profiles.")
     print(f"Filtered out {honeypot_count} honeypots.")
     print(f"Filtered out {disqualified_count} disqualified profiles.")
+    
+    if qualified_candidates:
+        print("Computing TF-IDF match scores...")
+        candidate_texts = [build_candidate_text(c) for c in qualified_candidates]
+        tfidf_scores = compute_tfidf_scores(jd_text, candidate_texts)
+        
+        print("Scoring candidates...")
+        for c, tfidf in zip(qualified_candidates, tfidf_scores):
+            c['_tfidf_score'] = float(tfidf)
+            c['_edu_score'] = score_education(c)
+            score = round(calculate_candidate_score(c), 4)
+            scored_candidates.append((c, score))
+            
     print(f"Scored {len(scored_candidates)} qualified profiles.")
     
     # Step 4: Sort candidates by score descending, break ties by candidate_id ascending

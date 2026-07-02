@@ -22,3 +22,7 @@ venv/
 .idea/
 *.swp
 *.swo
+
+# Temporary scratch and local clones
+scratch/
+
