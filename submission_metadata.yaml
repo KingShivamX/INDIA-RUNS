@@ -1,57 +1,79 @@
+# ═══════════════════════════════════════════════════════════════════════════
 # Redrob Hackathon — Submission Metadata
-# ============================================================================
-# Team identity
-# ============================================================================
+# Team Antigravity × Sneh  |  INDIA RUNS
+# ═══════════════════════════════════════════════════════════════════════════
+
 team_name: "team_antigravity"
 
 primary_contact:
-  name: "Antigravity Coding Assistant"
-  email: "antigravity@example.com"
-  phone: "+91-9999999999"
+  name: "Shivam"
+  email: "kingshivamx@gmail.com"
 
 team_members:
-  - name: "Antigravity Agent"
-    email: "antigravity@example.com"
+  - name: "Shivam (KingShivamX)"
     role: "AI Lead Engineer"
+  - name: "Sneh (sneh913)"
+    role: "ML Engineer"
 
-# ============================================================================
-# Code and reproducibility
-# ============================================================================
-github_repo: "https://github.com/shiva/INDIA-RUNS"
-sandbox_link: "https://huggingface.co/spaces/antigravity/redrob-ranker"
+# ═══════════════════════════════════════════════════════════════════════════
+# Code & Reproducibility
+# ═══════════════════════════════════════════════════════════════════════════
+github_repo: "https://github.com/KingShivamX/INDIA-RUNS"
 reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
 
-# ============================================================================
-# Compute environment
-# ============================================================================
+# ═══════════════════════════════════════════════════════════════════════════
+# Compute Environment
+# ═══════════════════════════════════════════════════════════════════════════
 compute:
   platform: "Windows PC"
   cpu_cores: 8
   ram_gb: 16
-  python_version: "3.11.0"
+  python_version: "3.11"
   os: "Windows 11"
   uses_gpu_for_inference: false
   has_network_during_ranking: false
   pre_computation_required: false
-  pre_computation_time_minutes: 0
+  average_runtime_seconds: 16
 
-# ============================================================================
-# AI tools declaration
-# ============================================================================
+# ═══════════════════════════════════════════════════════════════════════════
+# AI Tools Declaration
+# ═══════════════════════════════════════════════════════════════════════════
 ai_tools_used:
-  - "Gemini"
+  - "Gemini 3.5 Flash"
+  - "Claude Opus 4.6"
 ai_usage_summary: |
-  Used Gemini 3.5 Flash (High) via Antigravity to analyze candidate profiles, identify honeypots, refine the rule-based candidate scoring pipeline, and generate the final ranking script. No external API calls are made during the ranking execution.
+  Used Gemini and Claude via Antigravity IDE to analyze the 100K candidate
+  dataset, identify honeypot patterns, design the multi-axis scoring system,
+  and generate the final ranking pipeline. No external API calls are made
+  during ranking execution — the script runs fully offline.
 
-# ============================================================================
-# Approach summary
-# ============================================================================
+# ═══════════════════════════════════════════════════════════════════════════
+# Approach Summary
+# ═══════════════════════════════════════════════════════════════════════════
 methodology_summary: |
-  Highly optimized rule-based scoring engine designed specifically for the Senior AI Engineer JD constraints. We implement complete honeypot detection (temporal start date vs founding year checks, company duration limits, and zero-duration skill checks) guaranteeing a 0% honeypot rate. Candidates are disqualified based on consulting-only history, research-only history, architect-only profiles, and CV/speech-only domain mismatches. Scored on Title, Experience, Product company history, Skills (must-have groups and nice-to-have bonuses), Location, and Notice Period, modified by a multi-factor Behavioral Signal modifier. Ranks are deterministic with sorted rounded scores and ascending ID tie-breakers. Executes in ~4 seconds on CPU with 0 network calls.
+  High-performance, fully-offline AI resume ranking engine with:
 
-# ============================================================================
+  FILTERING:
+  • 3-layer honeypot detection (temporal start dates, impossible tenures, zero-duration expert skills)
+  • 6-rule disqualification filter (consulting-only, research-only, domain mismatch, unrelated titles)
+
+  SCORING (10 weighted axes):
+  • Title match (25%), Skills match (15%), Experience fit (12%), Product company ratio (12%)
+  • TF-IDF JD similarity (8%), Location & notice (10%), Education tier (5%)
+  • Career trajectory (5%), Job stability (5%), AI/ML domain depth (3%)
+
+  BEHAVIORAL MULTIPLIER (0.5x–1.4x):
+  • 10 platform signals: recruiter response rate, activity recency, open-to-work flag,
+    interview completion, GitHub activity, offer acceptance, recruiter saves,
+    profile completeness, email/phone/LinkedIn verification
+
+  PERFORMANCE:
+  • Processes 100K profiles in ~16 seconds on a single CPU core
+  • Zero network calls, zero GPU, zero pre-computation
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Declarations
-# ============================================================================
+# ═══════════════════════════════════════════════════════════════════════════
 declarations:
   read_submission_spec: true
   code_is_original_work: true
