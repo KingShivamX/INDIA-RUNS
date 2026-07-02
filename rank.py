@@ -2,7 +2,7 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║  INDIA RUNS — AI Resume Ranker v3                                          ║
-║  Team spart                                                                ║
+║  Team spark                                                                ║
 ║  Redrob Intelligent Candidate Discovery & Ranking Challenge                ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
@@ -649,7 +649,7 @@ def main():
         return
 
     print("=" * 70)
-    print("  INDIA RUNS - AI Resume Ranker v3 (Team spart)")
+    print("  INDIA RUNS - AI Resume Ranker v3 (Team spark)")
     print("=" * 70)
     print(f"\n  Candidates: {candidates_path}")
 
