@@ -2,7 +2,6 @@
 *India_runs_data_and_ai_challenge*
 
 # Exclude final submission files (which are generated dynamically)
-*.csv
 !sample_submission.csv
 
 # Exclude local shell wrappers
