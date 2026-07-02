@@ -36,7 +36,7 @@ python rank.py --candidates ./data/candidates.jsonl.gz --out ./submission.csv
 
 ```
 ======================================================================
-  INDIA RUNS — AI Resume Ranker v3 (Team Antigravity × Sneh)
+  INDIA RUNS — AI Resume Ranker v3 (Team spart)
 ======================================================================
 
   Candidates: ./candidates.jsonl

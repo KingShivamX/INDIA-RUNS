@@ -4,7 +4,7 @@
 
 ### Redrob Intelligent Candidate Discovery & Ranking Challenge
 
-**Team Antigravity × Sneh**
+**Team spart**
 
 [![Python](https://img.shields.io/badge/Python-3.9+-blue?logo=python&logoColor=white)](https://python.org)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-TF--IDF-orange?logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
