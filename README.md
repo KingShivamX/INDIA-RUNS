@@ -179,7 +179,8 @@ See [RUN.md](RUN.md) for detailed instructions.
 | Member | Role | GitHub |
 |--------|------|--------|
 | **Shivam** | AI Lead Engineer | [@KingShivamX](https://github.com/KingShivamX) |
-| **Sneh** | ML Engineer | [@sneh913](https://github.com/sneh913) |
+| **Snehal** | ML Engineer | [@sneh913](https://github.com/sneh913) |
+| **Srushti** | Software Engineer | [@Srushti2175](https://github.com/Srushti2175) |
 
 ---
 

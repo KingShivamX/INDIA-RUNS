@@ -12,8 +12,10 @@ primary_contact:
 team_members:
   - name: "Shivam (KingShivamX)"
     role: "AI Lead Engineer"
-  - name: "Sneh (sneh913)"
+  - name: "Snehal (sneh913)"
     role: "ML Engineer"
+  - name: "Srushti (Srushti2175)"
+    role: "Software Engineer"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Code & Reproducibility
