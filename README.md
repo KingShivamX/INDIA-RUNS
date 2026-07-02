@@ -4,7 +4,7 @@
 
 ### Redrob Intelligent Candidate Discovery & Ranking Challenge
 
-**Team spart**
+**Team spark**
 
 [![Python](https://img.shields.io/badge/Python-3.9+-blue?logo=python&logoColor=white)](https://python.org)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-TF--IDF-orange?logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
@@ -156,6 +156,33 @@ See [RUN.md](RUN.md) for detailed instructions.
 | Honeypot Rate in Top 100 | **0%** |
 | Runtime | **~16 seconds** |
 | #1 Ranked | Senior ML Engineer at Zomato, 7.2y exp |
+
+---
+
+## 📽️ Submission Presentation Outline (PPT Guide)
+
+*Use this outline to build your 10-slide submission deck:*
+
+- **Slide 1: Title Slide**
+  - Team spark | INDIA RUNS — AI Resume Ranker v3
+- **Slide 2: The Problem**
+  - Basic LLM or keyword searches fail to catch fake tenures, fake skills, and honeypots.
+- **Slide 3: Our Solution**
+  - A surgical, multi-axis offline scoring engine built like a real production ML system.
+- **Slide 4: Layer 1 - Fraud Detection**
+  - Our 3-layer check: Temporal limits (founding year vs. start date), duration limits, and skill-proficiency fraud (e.g., "expert" with 0 months).
+- **Slide 5: Layer 2 - Multi-Axis Scoring**
+  - 10 weighted axes: Title Match (25%), Skills (15%), Exp (12%), Product Co. (12%), Location (10%), TF-IDF (8%), Education (5%), Trajectory (5%), Stability (5%), Domain Depth (3%).
+- **Slide 6: Key Innovations (Differentiators)**
+  - Career Trajectory Scoring (upward mobility), Job Stability (penalizing hoppers), and AI/ML Domain Depth.
+- **Slide 7: Layer 3 - Behavioral Intelligence**
+  - How 10 platform signals (recruiter response, offer acceptance, GitHub activity) scale the base score from 0.5x to 1.4x.
+- **Slide 8: Robust, Zero-Dependency Architecture**
+  - Fully offline, single-file script. Uses a custom `zipfile` DOCX parser to avoid `python-docx` environment crashes.
+- **Slide 9: Results & Performance**
+  - 100K profiles processed in ~16s on CPU. 127 honeypots eliminated (0% honeypot rate in Top 100). 100% validator pass rate.
+- **Slide 10: Conclusion & Team**
+  - Recap why our approach is the most robust and production-ready.
 
 ---
 
